@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans">
+  <div class="container mx-auto py-8">
+    <h1 class="text-3xl font-bold mb-4">Student Management</h1>
+
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Add Student</h2>
+      <form id="add-student-form" class="space-y-4">
+        <div>
+          <label for="name" class="block font-medium text-gray-700 mb-1">Name</label>
+          <input type="text" id="name" name="name" class="border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full" required>
+        </div>
+        <div>
+          <label for="email" class="block font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" id="email" name="email" class="border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full" required>
+        </div>
+        <div>
+          <label for="grade" class="block font-medium text-gray-700 mb-1">Grade</label>
+          <input type="number" id="grade" name="grade" class="border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full" step="0.01" required>
+        </div>
+        <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded-md">Add Student</button>
+      </form>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg p-6">
+      <h2 class="text-xl font-bold mb-4">Students</h2>
+      <table class="w-full">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="px-4 py-2 text-left">Name</th>
+            <th class="px-4 py-2 text-left">Email</th>
+            <th class="px-4 py-2 text-left">Grade</th>
+            <th class="px-4 py-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="student-table-body">
+          <!-- Students will be added dynamically here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const apiUrl = 'http://localhost:8000/students';
+
+    // Fetch students and populate the table
+    fetch(apiUrl)
+      .then(response => response.json())
+      .then(data => {
+        const tableBody = document.getElementById('student-table-body');
+        data.forEach(student => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="px-4 py-2">${student.name}</td>
+            <td class="px-4 py-2">${student.email}</td>
+            <td class="px-4 py-2">${student.grade.toFixed(2)}</td>
+            <td class="px-4 py-2">
+              <button class="bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-2 rounded-md mr-2" onclick="deleteStudent(${student.id})">Delete</button>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+      })
+      .catch(error => console.error('Error fetching students:', error));
+
+    // Add a new student
+    document.getElementById('add-student-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const nameInput = document.getElementById('name');
+      const emailInput = document.getElementById('email');
+      const gradeInput = document.getElementById('grade');
+
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: nameInput.value,
+          email: emailInput.value,
+          grade: parseFloat(gradeInput.value)
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        const tableBody = document.getElementById('student-table-body');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="px-4 py-2">${data.name}</td>
+          <td class="px-4 py-2">${data.email}</td>
+          <td class="px-4 py-2">${data.grade.toFixed(2)}</td>
+          <td class="px-4 py-2">
+            <button class="bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-2 rounded-md mr-2" onclick="deleteStudent(${data.id})">Delete</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+        nameInput.value = '';
+        emailInput.value = '';
+        gradeInput.value = '';
+      })
+      .catch(error => console.error('Error adding student:', error));
+    });
+
+    // Delete a student
+    function deleteStudent(studentId) {
+      fetch(`${apiUrl}/${studentId}`, {
+        method: 'DELETE'
+      })
+      .then(() => {
+        const tableBody = document.getElementById('student-table-body');
+        const rows = tableBody.getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+          const cells = rows[i].getElementsByTagName('td');
+          if (parseInt(cells[3].textContent) === studentId) {
+            tableBody.removeChild(rows[i]);
+            break;
+          }
+        }
+      })
+      .catch(error => console.error('Error deleting student:', error));
+    }
+  </script>
+</body>
+</html>
